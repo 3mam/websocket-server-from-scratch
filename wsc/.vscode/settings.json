@@ -1,0 +1,15 @@
+{
+	"files.associations": {
+		"array": "c",
+		"string_view": "c",
+		"initializer_list": "c",
+		"utility": "c",
+		"random": "cpp",
+		"functional": "cpp",
+		"istream": "cpp",
+		"ostream": "cpp",
+		"tuple": "cpp",
+		"type_traits": "cpp",
+		"cstdarg": "cpp"
+	}
+}

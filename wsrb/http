@@ -1,0 +1,55 @@
+#!/usr/bin/ruby
+
+require "socket"
+require "digest/sha1"
+
+server = TCPServer.new 8000
+
+while conn = server.accept
+	head = ""
+	while h = conn.gets
+		break if h == "\r\n" 
+		head += h
+	end
+
+	puts head
+	if match = head.match(/^GET (\S+)/)
+		puts match[1]
+		case match[1]
+		when "/"
+			conn.write "
+HTTP/1.1 200
+Content-Type: text/html
+
+<h1>ave</h1>
+<script>
+var ws = new WebSocket(\"ws://0.0.0.0:8000/ws\")
+ws.binaryType = \"blob\"
+ws.onmessage = ev => {
+	console.log(\"ave\")
+}
+</script>
+"
+			conn.close
+		when "/ws"
+			key=""
+
+			if match = head.match(/^Sec-WebSocket-Key: (\S+)/)
+				key = Digest::SHA1.base64digest [match[1], "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"].join
+			end
+
+			conn.write "
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: #{key}
+
+"
+			conn.write [0b10000010, 4, 1,2,3,4].pack "ccc*"
+			conn.close
+		end
+	end
+
+
+
+end

@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+	<title>Websocket Client</title>
+</head>
+
+<body>
+	<script>
+		var exampleSocket = new WebSocket("ws://192.168.88.254/foo");
+		exampleSocket.binaryType = 'blob';
+		exampleSocket.onopen = function (event) {
+			exampleSocket.send("Can you hear me?");
+		};
+		exampleSocket.onmessage = function (event) {
+			console.log(event.data);
+			reader = new FileReader()
+			reader.readAsArrayBuffer(event.data)
+
+			reader.onload = () => console.log(reader.result)
+		}
+	</script>
+</body>
+
+</html>

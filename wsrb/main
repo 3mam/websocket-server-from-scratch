@@ -1,0 +1,76 @@
+#!/usr/bin/ruby
+
+require "socket"
+require "digest/sha1"
+
+server = TCPServer.new 8080
+
+while true
+	session = server.accept
+
+	key = ""
+	while line = session.gets and line != "\r\n"
+		puts line
+		if match = line.match(/^Sec-WebSocket-Key: (\S+)/)
+			key = Digest::SHA1.base64digest [match[1], "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"].join
+		end
+  end
+	
+	puts key
+	session.write "
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: #{key}
+
+"
+puts "Handshake completed. Starting to parse the websocket frame."
+
+byte1 = session.getbyte
+fin = byte1 >> 7
+puts "fin"
+case fin
+when 0
+	puts "Keep listening"
+when 1
+	puts "Message delivered"
+end
+
+opcode = byte1 & 0b00001111 
+puts "opcode"
+case opcode
+when 0 
+	puts "Continuation Frame"
+when 1
+	puts "Text Frame"
+when 2
+	puts "Binary Frame"
+when 8
+	puts "Connection Close Frame"
+when 9
+	puts "Ping Frame"
+when 10
+	puts "Pong Frame"
+end
+
+byte2 = session.getbyte
+mask = byte2 >> 	7
+puts "mask", mask
+payload_len = byte2 & 0b01111111
+puts "payload_len", payload_len
+
+mask_key = 4.times.map { session.getbyte }
+data = payload_len.times.map { session.getbyte }
+puts "mask_key", mask_key.inspect
+puts "data", data.inspect
+
+unmasked_data = data.each_with_index.map {|byte, i| byte ^ mask_key[i%4]}
+
+puts "unmasked_data", unmasked_data.inspect
+puts unmasked_data.pack('C*').force_encoding('utf-8').inspect
+
+var = [0b10000010, 4, 1,2,3,4]
+puts var.pack("ccc*").inspect
+session.write var.pack "ccc*"
+session.close
+end
